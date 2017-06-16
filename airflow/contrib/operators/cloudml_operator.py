@@ -30,7 +30,8 @@ logging.getLogger("GoogleCloudML").setLevel(logging.INFO)
 def _normalize_cloudml_job_id(job_id):
     """Replaces invalid CloudML job_id characters with '_'.
 
-    This also adds a leading 'z' in case job_id starts with an invalid character.
+    This also adds a leading 'z' in case job_id starts with an invalid
+    character.
 
     Args:
         job_id: A job_id str that may have invalid characters.
@@ -57,20 +58,22 @@ def _create_prediction_input(project_id,
     """Create the batch prediction input from the given parameters.
 
     Args:
-        A subset of arguments documented in CloudMLBatchPredictionOperator
+        A subset of arguments documented in __init__ method of class
+        CloudMLBatchPredictionOperator
 
     Returns:
-        A dictionary mirroring the predictionInput object as documented in
-        https://cloud.google.com/ml-engine/reference/rest/v1/projects.jobs#predictioninput.
+        A dictionary mirroring the predictionInput object as documented
+        in https://cloud.google.com/ml-engine/reference/rest/v1/projects.jobs.
 
     Raises:
-        ValueError: if a legal predictionInput cannot be constructed from the
-        inputs.
+        ValueError: if a legal predictionInput cannot be constructed
+        from the inputs.
     """
 
     if data_format not in ["TEXT", "TF_RECORD", "TF_RECORD_GZIP"]:
-        logging.warning("The input data format is not recognized. Default to "
-                        "DATA_FORMAT_UNSPECIFIED.")
+        logging.warning(
+            "The input data format is not recognized. Default to "
+            "DATA_FORMAT_UNSPECIFIED.")
         data_format = "DATA_FORMAT_UNSPECIFIED"
 
     try:
@@ -126,8 +129,9 @@ def _create_prediction_input(project_id,
             raise e
 
     else:
-        logging.error("Missing model origin: Batch prediction expects a model, a "
-                      "version, or a URI to savedModel.")
+        logging.error(
+            "Missing model origin: Batch prediction expects a model, "
+            "a version, or a URI to savedModel.")
         raise ValueError("Missing model version origin.")
 
     # Check for non-integer string or non-positive input
@@ -135,7 +139,8 @@ def _create_prediction_input(project_id,
         try:
             count = int(max_worker_count)
             if count < 0:
-                raise ValueError("The maximum worker count cannot be non-positive.")
+                raise ValueError(
+                    "The maximum worker count cannot be non-positive.")
             prediction_input["maxWorkerCount"] = max_worker_count
         except ValueError as e:
             raise e
@@ -149,7 +154,8 @@ def _create_prediction_input(project_id,
 def _validate_gcs_uri(uri):
     """Verifies the given uri is a legal GCS location.
 
-    The validation criteria for GCS bucket and object names are documented at:
+    The validation criteria for GCS bucket and object names are
+    documented at:
     https://cloud.google.com/storage/docs/naming.
 
     Args:
@@ -171,24 +177,25 @@ def _validate_gcs_uri(uri):
         raise ValueError("Illegal GCS bucket name: {}.".format(bucket_name))
     if "." in bucket_name and len(bucket_name) > 222:
         raise ValueError(
-            "GCS bucket name is longer than 222 bytes: {}.".format(bucket_name))
+            "GCS bucket name is longer than 222 bytes: {}."
+            .format(bucket_name))
     for dot_separated_component in bucket_name.split("."):
         if not 3 <= len(dot_separated_component) <= 63:
             raise ValueError(
-                "Each dot-eseparated component in GCS bucket name should be within 3"
-                " and 63 characters: {}.".format(bucket_name))
+                "Each dot-eseparated component in GCS bucket name should be "
+                "within 3 and 63 characters: {}.".format(bucket_name))
     if re.match(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", bucket_name):
         raise ValueError(
-            "GCS bucket name should represent a IPv4-like sequence: {}.".format(
-                bucket_name))
+            "GCS bucket name must not represent a IPv4-like sequence: {}."
+            .format(bucket_name))
     if re.match(r"(google|^goog)", bucket_name):
         raise ValueError(
             "GCS bucket name should not start with 'goog' prefix, or contain "
             "'google' inside the name: {}.".format(bucket_name))
     if re.match(r"(\.[-.])|(-\.)", bucket_name):
         raise ValueError(
-            "Bucket names must not contain a dot next to either a dot or a dash: {}.".
-            format(bucket_name))
+            "Bucket names must not contain a dot next to either a dot or a "
+            "dash: {}.".format(bucket_name))
 
     # Validation for object name
     object_name_utf8 = object_name.decode("utf-8")
@@ -197,9 +204,11 @@ def _validate_gcs_uri(uri):
             "GCS object name should be within 1 and 1024 bytes in length: {}.".
             format(uri))
     if r"\r" in object_name_utf8 or r"\n" in object_name_utf8:
-        raise ValueError("GCS object name must not contain {} characters: {}.".
-                         format("Carriage Return"
-                                if r"\r" in object_name_utf8 else "Line Feed", uri))
+        raise ValueError(
+            "GCS object name must not contain {} characters: {}."
+            .format(
+                "Carriage Return" if r"\r" in object_name_utf8 else "Line Feed",
+                uri))
 
 
 def _create_origin_name(project_id, model_name, version_name=None):
@@ -215,8 +224,8 @@ def _create_origin_name(project_id, model_name, version_name=None):
         "projects/<project_id>/models/<model_name>[/versions/<version_name>]"
 
     Raises:
-        ValueError, when any of the three inputs is not a valid CloudML resource
-        name, as documented in
+        ValueError, when any of the three inputs is not a valid
+        CloudML resource name, as documented in
         https://cloud.google.com/ml-engine/docs/how-tos/managing-models-jobs.
     """
     try:
@@ -256,8 +265,8 @@ def _validate_project_id(project_id):
     """
     if not 6 <= len(project_id) <= 30:
         raise ValueError(
-            "Project id should be within 6 and 30 characters in length: {}.".format(
-                project_id))
+            "Project id should be within 6 and 30 characters in length: {}."
+            .format(project_id))
     if not re.match(r"^[a-z][-a-z0-9]*[^-]$", project_id):
         raise ValueError("Illegal project id: {}.".format(project_id))
 
@@ -267,10 +276,10 @@ def _validate_resource_name(resource_name):
     The name could refer to a model, a version, or a job.
 
     The validation criteria is documented at:
-    https://cloud.google.com/ml-engine/docs/how-tos/managing-models-jobs.
+    https://cloud.google.com/ml-engine/docs/how-tos/managing-models-jobs
 
     Args:
-        resource_name: A single piece of resource name to be verified; string
+        resource_name: The resource name to be verified; string
 
     Raises:
         ValueError: if the resource name is invalid.
@@ -278,84 +287,89 @@ def _validate_resource_name(resource_name):
     """
     if not 1 <= len(resource_name) <= 128:
         raise ValueError(
-            "Resource name should be within 1 and 128 characters in length: {}.".
-            format(resource_name))
+            "Resource name should be within 1 and 128 characters in length: {}."
+            .format(resource_name))
     if not re.match(r"^[a-zA-Z]\w*$", resource_name):
-        raise ValueError("The resource name is illegal: {}.".format(resource_name))
+        raise ValueError("The resource name is illegal: {}.".format(
+            resource_name))
 
 
 class CloudMLBatchPredictionOperator(BaseOperator):
     """Start a Cloud ML prediction job.
 
-    NOTE: For model origin, users should consider exactly one from the three
-    options below:
-    1. Populate 'uri' field only, which should be a GCS location that points to a
-    tensorflow savedModel directory.
-    2. Populate 'model_name' field only, which refers to an existing model, and
-    the default version of the model will be used.
-    3. Populate both 'model_name' and 'version_name' fields, which refers to a
-    specific version of a specific model.
+    NOTE: For model origin, users should consider exactly one from the
+    three options below:
+    1. Populate 'uri' field only, which should be a GCS location that
+    points to a tensorflow savedModel directory.
+    2. Populate 'model_name' field only, which refers to an existing
+    model, and the default version of the model will be used.
+    3. Populate both 'model_name' and 'version_name' fields, which
+    refers to a specific version of a specific model.
 
-    In options 2 and 3, both model and version name should contain the minimal
-    identifier. For instance, call
+    In options 2 and 3, both model and version name should contain the
+    minimal identifier. For instance, call
     CloudMLBatchPredictionOperator(..., model_name='my_model',
     version_name='my_version', ...)
     if the desired version is
     "projects/my_project/models/my_model/versions/my_version".
 
-    :param project_id: The Google Cloud project name where the prediction job is
-    submitted
+    :param project_id: The Google Cloud project name where the
+        prediction job is submitted.
     :type project_id: string
 
-    :param job_id: A unique id for the prediction job on Google Cloud ML Engine.
+    :param job_id: A unique id for the prediction job on Google Cloud
+        ML Engine.
     :type job_id: string
 
     :param data_format: The format of the input data.
-        It will default to 'DATA_FORMAT_UNSPECIFIED' if is not provided or is not
-        one of ["TEXT", "TF_RECORD", "TF_RECORD_GZIP"].
+        It will default to 'DATA_FORMAT_UNSPECIFIED' if is not provided
+        or is not one of ["TEXT", "TF_RECORD", "TF_RECORD_GZIP"].
     :type data_format: string
 
-    :param input_paths: A list of GCS paths of input data for batch prediction.
-        Accepting wildcard operator *, but only at the end.
+    :param input_paths: A list of GCS paths of input data for batch
+        prediction. Accepting wildcard operator *, but only at the end.
     :type input_paths: list of string
 
-    :param output_path: The GCS path where the prediction results are written to.
+    :param output_path: The GCS path where the prediction results are
+        written to.
     :type output_path: string
 
-    :param region: The Google Compute Engine region to run the prediction job in.:
+    :param region: The Google Compute Engine region to run the
+        prediction job in.:
     :type region: string
 
     :param model_name: The Google Cloud ML model to use for prediction.
-        If version_name is not provided, the default version of this model will be
-        used.
+        If version_name is not provided, the default version of this
+        model will be used.
         Should not be None if version_name is provided.
         Should be None if uri is provided.
     :type model_name: string
 
-    :param version_name: The Google Cloud ML model version to use for prediction.
+    :param version_name: The Google Cloud ML model version to use for
+        prediction.
         Should be None if uri is provided.
     :type version_name: string
 
-    :param uri: The GCS path of the saved model to be used for prediction.
+    :param uri: The GCS path of the saved model to use for prediction.
         Should be None if model_name is provided.
         It should be a GCS path pointing to a tensorflow SavedModel.
     :type uri: string
 
-    :param max_worker_count: The maximum number of workers to be used for parallel
-        processing. Defaults to 10 if not specified.
+    :param max_worker_count: The maximum number of workers to be used
+        for parallel processing. Defaults to 10 if not specified.
     :type max_worker_count: int
 
-    :param runtime_version: The Google Cloud ML runtime version to use for this
-        batch prediction.
+    :param runtime_version: The Google Cloud ML runtime version to use
+        for batch prediction.
     :type runtime_version: string
 
-    :param gcp_conn_id: The connection ID to use connecting to Google Cloud
-        Platform.
+    :param gcp_conn_id: The connection ID used for connection to Google
+        Cloud Platform.
     :type gcp_conn_id: string
 
     :param delegate_to: The account to impersonate, if any.
-        For this to work, the service account making the request must have
-        doamin-wide delegation enabled.
+        For this to work, the service account making the request must
+        have doamin-wide delegation enabled.
     :type delegate_to: string
 
     Raises:
@@ -411,19 +425,27 @@ class CloudMLBatchPredictionOperator(BaseOperator):
         try:
             existing_job = hook.get_job(self.project_id, job_id)
             logging.info(
-                "Job with job_id {} already exist: {}.".format(job_id, existing_job))
-            finished_prediction_job = hook.wait_for_job_done(self.project_id, job_id)
+                "Job with job_id {} already exist: {}.".format(
+                    job_id,
+                    existing_job))
+            finished_prediction_job = hook.wait_for_job_done(
+                self.project_id,
+                job_id)
         except errors.HttpError as e:
             if e.resp.status == 404:
                 logging.error(
-                    "Job with job_id {} does not exist. Will create it.".format(job_id))
-                finished_prediction_job = hook.create_job(self.project_id, prediction_job_request)
+                    "Job with job_id {} does not exist. Will create it."
+                    .format(job_id))
+                finished_prediction_job = hook.create_job(
+                    self.project_id,
+                    prediction_job_request)
             else:
                 raise e
 
         if finished_prediction_job["state"] != "SUCCEEDED":
-            logging.error("Batch prediction job failed: %s",
-                          str(finished_prediction_job))
+            logging.error(
+                "Batch prediction job failed: %s",
+                str(finished_prediction_job))
             raise RuntimeError(finished_prediction_job["errorMessage"])
 
         return finished_prediction_job["predictionOutput"]
@@ -432,18 +454,23 @@ class CloudMLBatchPredictionOperator(BaseOperator):
         try:
             _validate_resource_name(self.job_id)
         except ValueError as e:
-            logging.error("Cannot create batch prediction job request due to: {}".
-                          format(str(e)))
+            logging.error(
+                "Cannot create batch prediction job request due to: {}"
+                .format(str(e)))
             raise ValueError("Illegal job id. " + str(e))
 
         try:
             prediction_input = _create_prediction_input(
-                self.project_id, self.region, self.data_format, self.input_paths,
-                self.output_path, self.model_name, self.version_name, self.uri,
-                self.max_worker_count, self.runtime_version)
+                self.project_id, self.region, self.data_format,
+                self.input_paths, self.output_path, self.model_name,
+                self.version_name, self.uri, self.max_worker_count,
+                self.runtime_version)
         except ValueError as e:
-            logging.error("Cannot create batch prediction job request due to: {}".
-                          format(str(e)))
+            logging.error(
+                "Cannot create batch prediction job request due to: {}"
+                .format(str(e)))
             raise e
 
-        return {"jobId": self.job_id, "predictionInput": prediction_input}
+        return {
+            "jobId": self.job_id,
+            "predictionInput": prediction_input}

@@ -18,9 +18,9 @@ from __future__ import division
 from __future__ import print_function
 
 import datetime
-import unittest
 from apiclient import errors
 import httplib2
+import unittest
 
 from airflow import configuration, DAG
 from airflow.contrib.operators.cloudml_operator import CloudMLBatchPredictionOperator
@@ -55,7 +55,7 @@ DEFAULT_ARGS = {
     'region': 'us-east1',
     'data_format': 'TEXT',
     'input_paths': ['gs://legal-bucket-dash-Capital/legal-input-path/*'],
-    'output_path': 'gs://123_legal_bucket_underscore_number/legal-output-path',
+    'output_path': 'gs://12_legal_bucket_underscore_number/legal-output-path',
     'task_id': 'test-prediction'
 }
 
@@ -75,7 +75,8 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             schedule_interval='@daily')
 
     def testSuccess(self):
-        with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') as mock_hook:
+        with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') \
+                as mock_hook:
             hook_instance = mock_hook.return_value
             hook_instance.get_job.side_effect = errors.HttpError(
                 resp=httplib2.Response({
@@ -96,11 +97,15 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             prediction_output = prediction_task.execute(None)
 
             mock_hook.assert_called_with('google_cloud_default', None)
-            hook_instance.create_job.assert_called_with('experimental-project', {
-                'jobId': 'test_prediction',
-                'predictionInput': INPUT_FOR_SUCCESS
-            })
-            self.assertEquals(SUCCESS_MESSAGE['predictionOutput'], prediction_output)
+            hook_instance.create_job.assert_called_with(
+                'experimental-project',
+                {
+                    'jobId': 'test_prediction',
+                    'predictionInput': INPUT_FOR_SUCCESS
+                })
+            self.assertEquals(
+                SUCCESS_MESSAGE['predictionOutput'],
+                prediction_output)
 
     def testInvalidModelOrigin(self):
         task_args = DEFAULT_ARGS.copy()
@@ -121,7 +126,9 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
         task_args = DEFAULT_ARGS.copy()
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
-        self.assertEquals('Missing model version origin.', str(context.exception))
+        self.assertEquals(
+            'Missing model version origin.',
+            str(context.exception))
 
         task_args = DEFAULT_ARGS.copy()
         task_args['project_id'] = 'bad_project_underscore'
@@ -138,17 +145,19 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
         self.assertEquals(
-            'Error parsing the project id. Project id should be within 6 and 30 '
-            'characters in length: {}.'.format(task_args['project_id']),
+            'Error parsing the project id. Project id should be within 6 and '
+            '30 characters in length: {}.'.format(task_args['project_id']),
             str(context.exception))
 
         task_args = DEFAULT_ARGS.copy()
-        task_args['model_name'] = 'projects/experimental-project/models/fake_model'
+        task_args['model_name'] = \
+            'projects/experimental-project/models/fake_model'
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
         self.assertEquals(
-            'Error parsing the model name. The resource name is illegal: {}.'.
-            format(task_args['model_name']), str(context.exception))
+            'Error parsing the model name. The resource name is illegal: {}.'
+                .format(task_args['model_name']),
+            str(context.exception))
 
         task_args = DEFAULT_ARGS.copy()
         task_args['model_name'] = 'fake_model'
@@ -156,14 +165,17 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
         self.assertEquals(
-            'Error parsing the version name. The resource name is illegal: {}.'.
-            format(task_args['version_name']), str(context.exception))
+            'Error parsing the version name. The resource name is illegal: {}.'
+                .format(task_args['version_name']),
+            str(context.exception))
 
         task_args = DEFAULT_ARGS.copy()
         task_args['version_name'] = 'fake_version'
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
-        self.assertEquals('Incomplete version origin.', str(context.exception))
+        self.assertEquals(
+            'Incomplete version origin.',
+            str(context.exception))
 
     def testInvalidJobId(self):
         task_args = DEFAULT_ARGS.copy()
@@ -182,8 +194,9 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
         self.assertEquals(
-            'Illegal input path. GCS object name must not contain Carriage Return characters: {}.'.
-            format(task_args['input_paths'][0]), str(context.exception))
+            'Illegal input path. GCS object name must not contain Carriage '
+                'Return characters: {}.'.format(task_args['input_paths'][0]),
+            str(context.exception))
 
         task_args = DEFAULT_ARGS.copy()
         task_args['output_path'] = r'gs://bucket/linefeed\n'
@@ -191,15 +204,16 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
         self.assertEquals(
-            'Illegal output path. GCS object name must not contain Line Feed characters: {}.'.
-            format(task_args['output_path']), str(context.exception))
+            'Illegal output path. GCS object name must not contain Line Feed '
+                'characters: {}.'.format(task_args['output_path']),
+            str(context.exception))
 
     def testHttpError(self):
         http_error_code = 503
         self.assertNotEqual(404, http_error_code)
 
-        with patch(
-              'airflow.contrib.operators.cloudml_operator.CloudMLHook') as mock_hook:
+        with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') \
+              as mock_hook:
             hook_instance = mock_hook.return_value
             hook_instance.get_job.side_effect = errors.HttpError(
                 resp=httplib2.Response({
@@ -217,13 +231,15 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
                     model_name=INPUT_FOR_SUCCESS['modelName'].split('/')[-1],
                     dag=self.dag,
                     task_id='test-prediction')
-                prediction_output = prediction_task.execute(None)
+                prediction_task.execute(None)
 
                 mock_hook.assert_called_with('google_cloud_default', None)
-                hook_instance.create_job.assert_called_with('experimental-project', {
-                    'jobId': 'test_prediction',
-                    'predictionInput': INPUT_FOR_SUCCESS
-                })
+                hook_instance.create_job.assert_called_with(
+                    'experimental-project',
+                    {
+                        'jobId': 'test_prediction',
+                        'predictionInput': INPUT_FOR_SUCCESS
+                    })
 
             self.assertEquals(http_error_code, context.exception.resp.status)
 
