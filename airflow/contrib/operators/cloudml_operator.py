@@ -18,9 +18,8 @@
 import logging
 import re
 
-import airflow
-from airflow.contrib.hooks.gcp_cloudml_hook import CloudMLHook
 from airflow.operators import BaseOperator
+from airflow.contrib.hooks.gcp_cloudml_hook import CloudMLHook
 
 from airflow.utils.decorators import apply_defaults
 from apiclient import errors
