@@ -83,7 +83,7 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             hook_instance.get_job.side_effect = errors.HttpError(
                 resp=httplib2.Response({
                     'status': 404
-                }), content='some bytes')
+                }), content=b'some bytes')
             hook_instance.create_job.return_value = SUCCESS_MESSAGE
 
             prediction_task = CloudMLBatchPredictionOperator(
@@ -220,7 +220,7 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             hook_instance.get_job.side_effect = errors.HttpError(
                 resp=httplib2.Response({
                     'status': http_error_code
-                }), content='some bytes')
+                }), content=b'some bytes')
 
             with self.assertRaises(errors.HttpError) as context:
                 prediction_task = CloudMLBatchPredictionOperator(

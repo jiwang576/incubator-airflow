@@ -198,7 +198,11 @@ def _validate_gcs_uri(uri):
             "dash: {}.".format(bucket_name))
 
     # Validation for object name
-    object_name_utf8 = object_name.decode("utf-8")
+    try:
+        object_name_utf8 = object_name.decode("utf-8")
+    except AttributeError:
+        object_name_utf8 = object_name
+        
     if not 1 <= len(object_name_utf8) <= 1024:
         raise ValueError(
             "GCS object name should be within 1 and 1024 bytes in length: {}.".
