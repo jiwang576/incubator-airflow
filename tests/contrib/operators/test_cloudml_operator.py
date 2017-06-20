@@ -24,7 +24,6 @@ from apiclient import errors
 import httplib2
 import unittest
 
-import airflow
 from airflow import configuration, DAG
 from airflow.contrib.operators.cloudml_operator import CloudMLBatchPredictionOperator
 
