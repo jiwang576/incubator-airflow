@@ -46,7 +46,7 @@ class _CloudMLJob(object):
         try:
             self._job = request.execute()
             return True
-        except errors.HttpError, e:
+        except errors.HttpError as e:
             logging.error('Something went wrong: %s', e)
             return False
 
@@ -58,7 +58,7 @@ class _CloudMLJob(object):
         try:
             response = request.execute()
             return True
-        except errors.HttpError, e:
+        except errors.HttpError as e:
             logging.error('Something went wrong: %s', e)
             return False
 
