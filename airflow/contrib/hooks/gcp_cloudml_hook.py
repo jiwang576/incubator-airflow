@@ -1,5 +1,19 @@
-# Placeholder. See https://github.com/apache/incubator-airflow/blob/master/airflow/contrib/hooks/gcp_dataflow_hook.py
-# for reference
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 import logging
 import random
@@ -8,7 +22,6 @@ from apiclient.discovery import build
 from apiclient import errors
 from datetime import datetime
 from oauth2client.client import GoogleCredentials
-
 from airflow.contrib.hooks.gcp_api_base_hook import GoogleCloudBaseHook
 
 logging.getLogger('GoogleCloudML').setLevel(logging.INFO)
@@ -66,9 +79,7 @@ class _CloudMLJob(object):
 
 class CloudMLHook(GoogleCloudBaseHook):
 
-    def __init__(self,
-                 gcp_conn_id='google_cloud_default',
-                 delegate_to=None):
+    def __init__(self, gcp_conn_id='google_cloud_default', delegate_to=None):
         super(CloudMLHook, self).__init__(gcp_conn_id, delegate_to)
         self._cloudml = self.get_conn()
 
@@ -76,7 +87,6 @@ class CloudMLHook(GoogleCloudBaseHook):
         """
         Returns a Google CloudML service object.
         """
-        # TODO(nedam): Make this work with self._authorize() instead.
         credentials = GoogleCredentials.get_application_default()
         return build('ml', 'v1', credentials=credentials)
 

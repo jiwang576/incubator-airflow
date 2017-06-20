@@ -9,21 +9,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
 
 import json
+import mock
 import unittest
-import urlparse
+try: # python 2
+    from urlparse import urlparse, parse_qsl
+except ImportError: #python 3
+    from urllib.parse import urlparse, parse_qsl
 
 from airflow.contrib.hooks import gcp_cloudml_hook as hook
-
 from apiclient.discovery import build
 from apiclient.http import HttpMockSequence
-import mock
 from oauth2client.contrib.gce import HttpAccessTokenRefreshError
 
 cml_available = True
-
 try:
     hook.CloudMLHook().get_conn()
 except HttpAccessTokenRefreshError:
@@ -48,12 +48,12 @@ class _TestCloudMLHook(object):
         self._test_cls = test_cls
         self._responses = responses
         self._expected_requests = [
-            self._normalize_requests_for_comparison(x) for x in expected_requests]
+            self._normalize_requests_for_comparison(x[0], x[1], x[2]) for x in expected_requests]
         self._actual_requests = []
 
-    def _normalize_requests_for_comparison(self, (uri, http_method, body)):
-        parts = urlparse.urlparse(uri)
-        return (parts._replace(query=set(urlparse.parse_qsl(parts.query))), http_method, body)
+    def _normalize_requests_for_comparison(self, uri, http_method, body):
+        parts = urlparse(uri)
+        return (parts._replace(query=set(parse_qsl(parts.query))), http_method, body)
 
     def __enter__(self):
         http = HttpMockSequence(self._responses)
@@ -75,7 +75,7 @@ class _TestCloudMLHook(object):
         if any(args):
             return None
         self._test_cls.assertEquals(
-            [self._normalize_requests_for_comparison(x) for x in self._actual_requests], self._expected_requests)
+            [self._normalize_requests_for_comparison(x[0], x[1], x[2]) for x in self._actual_requests], self._expected_requests)
 
 
 class TestCloudMLHook(unittest.TestCase):
