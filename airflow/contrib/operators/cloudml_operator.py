@@ -18,13 +18,14 @@
 import logging
 import re
 
+from airflow import settings
 from airflow.operators import BaseOperator
 from airflow.contrib.hooks.gcp_cloudml_hook import CloudMLHook
 
 from airflow.utils.decorators import apply_defaults
 from apiclient import errors
 
-logging.getLogger('GoogleCloudML').setLevel(logging.INFO)
+logging.getLogger('GoogleCloudML').setLevel(settings.LOGGING_LEVEL)
 
 
 def _normalize_cloudml_job_id(job_id):
