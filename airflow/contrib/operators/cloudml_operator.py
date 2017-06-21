@@ -63,12 +63,11 @@ def _create_prediction_input(project_id,
         CloudMLBatchPredictionOperator
 
     Returns:
-        A dictionary mirroring the predictionInput object as documented
+        A dictionary representing the predictionInput object as documented
         in https://cloud.google.com/ml-engine/reference/rest/v1/projects.jobs.
 
     Raises:
-        ValueError: if a legal predictionInput cannot be constructed
-        from the inputs.
+        ValueError: if a unique model/version origin cannot be determined.
     """
 
     prediction_input = {
@@ -99,7 +98,7 @@ def _create_prediction_input(project_id,
             'Missing model origin: Batch prediction expects a model, '
             'a model & version combination, or a URI to savedModel.')
         raise ValueError('Missing model origin.')
-        
+
     if max_worker_count:
         prediction_input['maxWorkerCount'] = max_worker_count
 
@@ -123,10 +122,14 @@ class CloudMLBatchPredictionOperator(BaseOperator):
 
     In options 2 and 3, both model and version name should contain the
     minimal identifier. For instance, call
-    CloudMLBatchPredictionOperator(..., model_name='my_model',
-    version_name='my_version', ...)
-    if the desired version is
+        CloudMLBatchPredictionOperator(
+            ..., 
+            model_name='my_model',
+            version_name='my_version', 
+            ...)
+    if the desired model version is
     "projects/my_project/models/my_model/versions/my_version".
+
 
     :param project_id: The Google Cloud project name where the
         prediction job is submitted.
@@ -188,11 +191,11 @@ class CloudMLBatchPredictionOperator(BaseOperator):
     :type delegate_to: string
 
     Raises:
-        ValueError: when wrong arguments are given.
+        ValueError: if a unique model/version origin cannot be determined.
     """
 
     template_fields = [
-        "prediction_request",
+        "prediction_job_request",
     ]
 
     @apply_defaults
@@ -220,7 +223,7 @@ class CloudMLBatchPredictionOperator(BaseOperator):
 
         try:
             prediction_input = _create_prediction_input(
-                project_id, region, data_format, input_paths, output_path, 
+                project_id, region, data_format, input_paths, output_path,
                 model_name, version_name, uri, max_worker_count,
                 runtime_version)
         except ValueError as e:
