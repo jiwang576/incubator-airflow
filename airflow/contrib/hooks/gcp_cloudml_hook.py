@@ -50,7 +50,7 @@ class _CloudMLJob(object):
         request = self._cloudml.projects().jobs().get(name=name)
         try:
             return request.execute()
-        except errors.HttpError, e:
+        except errors.HttpError as e:
             logging.error('Failed to get CloudML job: {}'.format(e))
             raise e
 
@@ -64,7 +64,7 @@ class _CloudMLJob(object):
             parent=self._project_name, body=self._job_spec)
         try:
             return request.execute()
-        except errors.HttpError, e:
+        except errors.HttpError as e:
             logging.error('Failed to create CloudML job: {}'.format(e))
             raise e
 
