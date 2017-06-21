@@ -26,6 +26,27 @@ from airflow import settings
 
 logging.getLogger('GoogleCloudML').setLevel(settings.LOGGING_LEVEL)
 
+def _retry_with_exponential_delay(request, max_n, is_done_func, is_error_func):
+    
+    for i in range(0, max_n):
+        try:
+            response = request.execute()
+            if is_error_func(response):
+                raise ValueError('The response contained an error: {}'
+                    .format(response))
+            elif is_done_func(response):
+                logging.info('Operation is done: {}'.format(response))
+                return response
+            else:
+                time.sleep((2**i) + (random.randint(0, 1000) / 1000))
+        except errors.HttpError as e:
+            if e.resp.status != 429:
+                logging.info('Something went wrong. Not retrying: {}'
+                    .format(e))
+                raise
+            else:
+                time.sleep((2**i) + (random.randint(0, 1000) / 1000))
+
 
 class _CloudMLJob(object):
     """CloudML job operations helper class."""
@@ -48,11 +69,11 @@ class _CloudMLJob(object):
         """
         name = '{}/jobs/{}'.format(self._project_name, self._job_id)
         request = self._cloudml.projects().jobs().get(name=name)
-        try:
-            return request.execute()
-        except errors.HttpError as e:
-            logging.error('Failed to get CloudML job: {}'.format(e))
-            raise e
+        return _retry_with_exponential_delay(
+            request=request,
+            max_n=9,
+            is_done_func=lambda resp:resp.get('done', False),
+            is_error_func=lambda resp:resp.get('error', None) is not None)
 
     def create_job(self):
         """Creates a Job on Cloud ML.
