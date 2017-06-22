@@ -263,17 +263,16 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             'Missing model origin.',
             str(context.exception))
 
-
     def testHttpError(self):
         http_error_code = 403
         self.assertNotEqual(404, http_error_code)
 
         with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') \
-              as mock_hook:
+                as mock_hook:
             input_with_model = INPUT_MISSING_ORIGIN.copy()
             input_with_model['modelName'] = \
                 'projects/experimental/models/test_model'
-                
+
             hook_instance = mock_hook.return_value
             hook_instance.get_job.side_effect = errors.HttpError(
                 resp=httplib2.Response({

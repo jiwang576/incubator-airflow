@@ -13,9 +13,9 @@
 import json
 import mock
 import unittest
-try: # python 2
+try:  # python 2
     from urlparse import urlparse, parse_qsl
-except ImportError: #python 3
+except ImportError:  # python 3
     from urllib.parse import urlparse, parse_qsl
 
 from airflow.contrib.hooks import gcp_cloudml_hook as hook
@@ -53,7 +53,10 @@ class _TestCloudMLHook(object):
 
     def _normalize_requests_for_comparison(self, uri, http_method, body):
         parts = urlparse(uri)
-        return (parts._replace(query=set(parse_qsl(parts.query))), http_method, body)
+        return (
+            parts._replace(query=set(parse_qsl(parts.query))),
+            http_method,
+            body)
 
     def __enter__(self):
         http = HttpMockSequence(self._responses)
@@ -75,7 +78,8 @@ class _TestCloudMLHook(object):
         if any(args):
             return None
         self._test_cls.assertEquals(
-            [self._normalize_requests_for_comparison(x[0], x[1], x[2]) for x in self._actual_requests], self._expected_requests)
+            [self._normalize_requests_for_comparison(x[0], x[1], x[2]) for x in self._actual_requests],
+            self._expected_requests)
 
 
 class TestCloudMLHook(unittest.TestCase):

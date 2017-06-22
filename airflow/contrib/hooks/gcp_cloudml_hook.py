@@ -16,7 +16,6 @@
 
 
 import logging
-import random
 import time
 from apiclient.discovery import build
 from apiclient import errors
@@ -49,11 +48,11 @@ class _CloudMLJob(object):
         name = '{}/jobs/{}'.format(self._project_name, self._job_id)
         request = self._cloudml.projects().jobs().get(name=name)
         while True:
-            try: 
+            try:
                 return request.execute()
             except errors.HttpError as e:
                 if e.resp.status == 429:
-                    time.sleep(10) # polling after 10 seconds
+                    time.sleep(10)  # polling after 10 seconds
                 else:
                     logging.error('Failed to get CloudML job: {}'.format(e))
                     raise e
@@ -87,8 +86,9 @@ class _CloudMLJob(object):
             job = self.get_job()
             state = job['state']
             if state in ['FAILED', 'SUCCEEDED', 'CANCELLED']:
-              return job
+                return job
             time.sleep(interval)
+
 
 class CloudMLHook(GoogleCloudBaseHook):
 
@@ -111,8 +111,8 @@ class CloudMLHook(GoogleCloudBaseHook):
         project_name is the name of the project to use, such as
         'my-project'
 
-        job is the complete Cloud ML Job object that should be provided to the Cloud
-        ML API, such as
+        job is the complete Cloud ML Job object that should be provided to the
+        Cloud ML API, such as
 
         {
           'jobId': 'my_job_id',
@@ -122,7 +122,8 @@ class CloudMLHook(GoogleCloudBaseHook):
           }
         }
         """
-        cloudml_job = _CloudMLJob(self._cloudml, project_name, job['jobId'], job)
+        cloudml_job = _CloudMLJob(
+            self._cloudml, project_name, job['jobId'], job)
         cloudml_job.create_job()
         return cloudml_job.wait_for_done(10)  # Polling interval is 10 sec
 

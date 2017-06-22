@@ -123,9 +123,9 @@ class CloudMLBatchPredictionOperator(BaseOperator):
     In options 2 and 3, both model and version name should contain the
     minimal identifier. For instance, call
         CloudMLBatchPredictionOperator(
-            ..., 
+            ...,
             model_name='my_model',
-            version_name='my_version', 
+            version_name='my_version',
             ...)
     if the desired model version is
     "projects/my_project/models/my_model/versions/my_version".
