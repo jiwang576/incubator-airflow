@@ -91,7 +91,7 @@ def _create_prediction_input(project_id,
             prediction_input['modelName'] = origin_name
         else:
             prediction_input['versionName'] = \
-                origin_name + 'versions/{}'.format(version_name)
+                origin_name + '/versions/{}'.format(version_name)
 
     else:
         logging.error(

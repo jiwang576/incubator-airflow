@@ -31,17 +31,15 @@ from mock import patch
 
 DEFAULT_DATE = datetime.datetime(2017, 6, 6)
 
-INPUT_FOR_SUCCESS = {
+INPUT_MISSING_ORIGIN = {
     'dataFormat': 'TEXT',
     'inputPaths': ['gs://legal-bucket/fake-input-path/*'],
-    'modelName': 'projects/experimental-project/models/fake_model',
     'outputPath': 'gs://legal-bucket/fake-output-path',
     'region': 'us-east1',
 }
 
-SUCCESS_MESSAGE = {
+SUCCESS_MESSAGE_MISSING_INPUT = {
     'jobId': 'test_prediction',
-    'predictionInput': INPUT_FOR_SUCCESS,
     'predictionOutput': {
         'outputPath': 'gs://fake-output-path',
         'predictionCount': 5000,
@@ -52,7 +50,7 @@ SUCCESS_MESSAGE = {
 }
 
 DEFAULT_ARGS = {
-    'project_id': 'experimental-project',
+    'project_id': 'test-project',
     'job_id': 'test_prediction',
     'region': 'us-east1',
     'data_format': 'TEXT',
@@ -76,40 +74,128 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             },
             schedule_interval='@daily')
 
-    def testSuccess(self):
+    def testSuccessWithModel(self):
         with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') \
                 as mock_hook:
+
+            input_with_model = INPUT_MISSING_ORIGIN.copy()
+            input_with_model['modelName'] = \
+                'projects/test-project/models/test_model'
+            success_message = SUCCESS_MESSAGE_MISSING_INPUT.copy()
+            success_message['predictionInput'] = input_with_model
+
             hook_instance = mock_hook.return_value
             hook_instance.get_job.side_effect = errors.HttpError(
                 resp=httplib2.Response({
                     'status': 404
                 }), content=b'some bytes')
-            hook_instance.create_job.return_value = SUCCESS_MESSAGE
+            hook_instance.create_job.return_value = success_message
 
             prediction_task = CloudMLBatchPredictionOperator(
                 job_id='test_prediction',
-                project_id='experimental-project',
-                region=INPUT_FOR_SUCCESS['region'],
-                data_format=INPUT_FOR_SUCCESS['dataFormat'],
-                input_paths=INPUT_FOR_SUCCESS['inputPaths'],
-                output_path=INPUT_FOR_SUCCESS['outputPath'],
-                model_name=INPUT_FOR_SUCCESS['modelName'].split('/')[-1],
+                project_id='test-project',
+                region=input_with_model['region'],
+                data_format=input_with_model['dataFormat'],
+                input_paths=input_with_model['inputPaths'],
+                output_path=input_with_model['outputPath'],
+                model_name=input_with_model['modelName'].split('/')[-1],
                 dag=self.dag,
                 task_id='test-prediction')
             prediction_output = prediction_task.execute(None)
 
             mock_hook.assert_called_with('google_cloud_default', None)
             hook_instance.create_job.assert_called_with(
-                'experimental-project',
+                'test-project',
                 {
                     'jobId': 'test_prediction',
-                    'predictionInput': INPUT_FOR_SUCCESS
+                    'predictionInput': input_with_model
                 })
             self.assertEquals(
-                SUCCESS_MESSAGE['predictionOutput'],
+                success_message['predictionOutput'],
+                prediction_output)
+
+    def testSuccessWithVersion(self):
+        with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') \
+                as mock_hook:
+
+            input_with_version = INPUT_MISSING_ORIGIN.copy()
+            input_with_version['versionName'] = \
+                'projects/test-project/models/test_model/versions/test_version'
+            success_message = SUCCESS_MESSAGE_MISSING_INPUT.copy()
+            success_message['predictionInput'] = input_with_version
+
+            hook_instance = mock_hook.return_value
+            hook_instance.get_job.side_effect = errors.HttpError(
+                resp=httplib2.Response({
+                    'status': 404
+                }), content=b'some bytes')
+            hook_instance.create_job.return_value = success_message
+
+            prediction_task = CloudMLBatchPredictionOperator(
+                job_id='test_prediction',
+                project_id='test-project',
+                region=input_with_version['region'],
+                data_format=input_with_version['dataFormat'],
+                input_paths=input_with_version['inputPaths'],
+                output_path=input_with_version['outputPath'],
+                model_name=input_with_version['versionName'].split('/')[-3],
+                version_name=input_with_version['versionName'].split('/')[-1],
+                dag=self.dag,
+                task_id='test-prediction')
+            prediction_output = prediction_task.execute(None)
+
+            mock_hook.assert_called_with('google_cloud_default', None)
+            hook_instance.create_job.assert_called_with(
+                'test-project',
+                {
+                    'jobId': 'test_prediction',
+                    'predictionInput': input_with_version
+                })
+            self.assertEquals(
+                success_message['predictionOutput'],
+                prediction_output)
+
+    def testSuccessWithURI(self):
+        with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') \
+                as mock_hook:
+
+            input_with_uri = INPUT_MISSING_ORIGIN.copy()
+            input_with_uri['uri'] = 'gs://my_bucket/my_models/savedModel'
+            success_message = SUCCESS_MESSAGE_MISSING_INPUT.copy()
+            success_message['predictionInput'] = input_with_uri
+
+            hook_instance = mock_hook.return_value
+            hook_instance.get_job.side_effect = errors.HttpError(
+                resp=httplib2.Response({
+                    'status': 404
+                }), content=b'some bytes')
+            hook_instance.create_job.return_value = success_message
+
+            prediction_task = CloudMLBatchPredictionOperator(
+                job_id='test_prediction',
+                project_id='test-project',
+                region=input_with_uri['region'],
+                data_format=input_with_uri['dataFormat'],
+                input_paths=input_with_uri['inputPaths'],
+                output_path=input_with_uri['outputPath'],
+                uri=input_with_uri['uri'],
+                dag=self.dag,
+                task_id='test-prediction')
+            prediction_output = prediction_task.execute(None)
+
+            mock_hook.assert_called_with('google_cloud_default', None)
+            hook_instance.create_job.assert_called_with(
+                'test-project',
+                {
+                    'jobId': 'test_prediction',
+                    'predictionInput': input_with_uri
+                })
+            self.assertEquals(
+                success_message['predictionOutput'],
                 prediction_output)
 
     def testInvalidModelOrigin(self):
+        # Test that both uri and model is given
         task_args = DEFAULT_ARGS.copy()
         task_args['uri'] = 'gs://fake-uri/saved_model'
         task_args['model_name'] = 'fake_model'
@@ -117,6 +203,25 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             CloudMLBatchPredictionOperator(**task_args).execute(None)
         self.assertEquals('Ambiguous model origin.', str(context.exception))
 
+        # Test that both uri and model/version is given
+        task_args = DEFAULT_ARGS.copy()
+        task_args['uri'] = 'gs://fake-uri/saved_model'
+        task_args['model_name'] = 'fake_model'
+        task_args['version_name'] = 'fake_version'
+        with self.assertRaises(ValueError) as context:
+            CloudMLBatchPredictionOperator(**task_args).execute(None)
+        self.assertEquals('Ambiguous model origin.', str(context.exception))
+
+        # Test that a version is given without a model
+        task_args = DEFAULT_ARGS.copy()
+        task_args['version_name'] = 'bare_version'
+        with self.assertRaises(ValueError) as context:
+            CloudMLBatchPredictionOperator(**task_args).execute(None)
+        self.assertEquals(
+            'Missing model origin.',
+            str(context.exception))
+
+        # Test that none of uri, model, model/version is given
         task_args = DEFAULT_ARGS.copy()
         with self.assertRaises(ValueError) as context:
             CloudMLBatchPredictionOperator(**task_args).execute(None)
@@ -124,13 +229,6 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             'Missing model origin.',
             str(context.exception))
 
-        task_args = DEFAULT_ARGS.copy()
-        task_args['version_name'] = 'fake_version'
-        with self.assertRaises(ValueError) as context:
-            CloudMLBatchPredictionOperator(**task_args).execute(None)
-        self.assertEquals(
-            'Missing model origin.',
-            str(context.exception))
 
     def testHttpError(self):
         http_error_code = 403
@@ -138,6 +236,10 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
 
         with patch('airflow.contrib.operators.cloudml_operator.CloudMLHook') \
               as mock_hook:
+            input_with_model = INPUT_MISSING_ORIGIN.copy()
+            input_with_model['modelName'] = \
+                'projects/experimental/models/test_model'
+                
             hook_instance = mock_hook.return_value
             hook_instance.get_job.side_effect = errors.HttpError(
                 resp=httplib2.Response({
@@ -147,22 +249,22 @@ class CloudMLBatchPredictionOperatorTest(unittest.TestCase):
             with self.assertRaises(errors.HttpError) as context:
                 prediction_task = CloudMLBatchPredictionOperator(
                     job_id='test_prediction',
-                    project_id='experimental-project',
-                    region=INPUT_FOR_SUCCESS['region'],
-                    data_format=INPUT_FOR_SUCCESS['dataFormat'],
-                    input_paths=INPUT_FOR_SUCCESS['inputPaths'],
-                    output_path=INPUT_FOR_SUCCESS['outputPath'],
-                    model_name=INPUT_FOR_SUCCESS['modelName'].split('/')[-1],
+                    project_id='test-project',
+                    region=input_with_model['region'],
+                    data_format=input_with_model['dataFormat'],
+                    input_paths=input_with_model['inputPaths'],
+                    output_path=input_with_model['outputPath'],
+                    model_name=input_with_model['modelName'].split('/')[-1],
                     dag=self.dag,
                     task_id='test-prediction')
                 prediction_task.execute(None)
 
                 mock_hook.assert_called_with('google_cloud_default', None)
                 hook_instance.create_job.assert_called_with(
-                    'experimental-project',
+                    'test-project',
                     {
                         'jobId': 'test_prediction',
-                        'predictionInput': INPUT_FOR_SUCCESS
+                        'predictionInput': input_with_model
                     })
 
             self.assertEquals(http_error_code, context.exception.resp.status)
