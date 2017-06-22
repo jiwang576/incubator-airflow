@@ -69,12 +69,11 @@ class _CloudMLJob(object):
         """
         name = '{}/jobs/{}'.format(self._project_name, self._job_id)
         request = self._cloudml.projects().jobs().get(name=name)
-        return request.execute()
-#        return _retry_with_exponential_delay(
-#            request=request,
-#            max_n=9,
-#            is_done_func=lambda resp:resp.get('done', False),
-#            is_error_func=lambda resp:resp.get('error', None) is not None)
+        return _retry_with_exponential_delay(
+            request=request,
+            max_n=9,
+            is_done_func=lambda resp:resp.get('done', False),
+            is_error_func=lambda resp:resp.get('error', None) is not None)
 
     def create_job(self):
         """Creates a Job on Cloud ML.
