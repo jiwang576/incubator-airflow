@@ -48,11 +48,15 @@ class _CloudMLJob(object):
         """
         name = '{}/jobs/{}'.format(self._project_name, self._job_id)
         request = self._cloudml.projects().jobs().get(name=name)
-        try:
-            return request.execute()
-        except errors.HttpError as e:
-            logging.error('Failed to get CloudML job: {}'.format(e))
-            raise e
+        while True:
+            try: 
+                return request.execute()
+            except errors.HttpError as e:
+                if e.resp.status == 429:
+                    time.sleep(10) # polling after 10 seconds
+                else:
+                    logging.error('Failed to get CloudML job: {}'.format(e))
+                    raise e
 
     def create_job(self):
         """Creates a Job on Cloud ML.
@@ -66,7 +70,7 @@ class _CloudMLJob(object):
             return request.execute()
         except errors.HttpError as e:
             logging.error('Failed to create CloudML job: {}'.format(e))
-            raise e
+            raise
 
     def wait_for_done(self, interval):
         """Waits for the Job to reach a terminal state.
